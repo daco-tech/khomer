@@ -1,9 +1,11 @@
 package main
 
 import (
+	"khomer/config"
 	"net/http"
-	"github.com/labstack/echo/v4"
+
 	"github.com/common-nighthawk/go-figure"
+	"github.com/labstack/echo/v4"
 
 	"context"
 	"fmt"
@@ -12,28 +14,28 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 )
 
 func main() {
-		// init
-		myFigure := figure.NewFigure("kHomer", "", true)
-		myFigure.Print()
-		
-		// webserver
-		e := echo.New()
-		e.HideBanner = true
-		e.GET("/", func(c echo.Context) error {
-			// creates the in-cluster config
-		config, err := rest.InClusterConfig()
-		if err != nil {
-			panic(err.Error())
-		}
-		// creates the clientset
-		clientset, err := kubernetes.NewForConfig(config)
-		if err != nil {
-			panic(err.Error())
-		}
+	// init
+	myFigure := figure.NewFigure("kHomer", "", true)
+	myFigure.Print()
+
+	// creates the in-cluster config
+	config, err := config.GetConfig()
+	if err != nil {
+		panic(err.Error())
+	}
+	// creates the clientset
+	clientset, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	// webserver
+	e := echo.New()
+	e.HideBanner = true
+	e.GET("/", func(c echo.Context) error {
 		for {
 			// get pods in all the namespaces by omitting namespace
 			// Or specify namespace to get pods in particular namespace
@@ -58,7 +60,7 @@ func main() {
 			}
 
 			time.Sleep(10 * time.Second)
-			
+
 			strMsg := fmt.Sprintf("There are %d pods in the cluster\n", len(pods.Items))
 			return c.String(http.StatusOK, strMsg)
 		}
@@ -66,5 +68,4 @@ func main() {
 	})
 	e.Logger.Fatal(e.Start(":1323"))
 
-
-}	
+}
